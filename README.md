@@ -213,5 +213,3 @@ MIT License — feel free to use and adapt.
 PANM Agent — Personal AI Assistant
 
 ---
-
-> **About adding the n8n workflow JSON to GitHub:** Yes, it is completely fine and actually recommended! The `Personal_Assistant.json` file contains no secrets — all credentials are stored inside n8n by reference ID, not as plaintext. Sharing the workflow file lets others import and run the same automation easily. Just make sure you do **not** commit any `.env` files or hardcoded API keys.
