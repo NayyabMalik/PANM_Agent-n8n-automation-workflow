@@ -6,7 +6,7 @@
 
 ## 📸 Workflow Overview
 
-![PANM Agent Workflow](PANM_Agent.PNG)
+![PANM Agent Workflow](PANM_Agent.png)
 
 ---
 
