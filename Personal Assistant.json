@@ -1,0 +1,1130 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}\n",
+        "options": {
+          "systemMessage": "You are an AI assistant with access to multiple tools. Use the appropriate tool based on the user request.\n\nTOOLS:\n\n1. **Web Search:** Search the internet for current info, news, or facts. Use only when internal tools do not have the answer.\n\n2. **Scraping (Firecrawl):** Extract leads from websites (Name, URL, Email, Phone, Category, Remarks). Save in Google Sheet \"Leads\".\n\n3. **Leads Sheet:** Store business leads.\n   - create_leads_sheet: create sheet\n   - add_lead: add a row\n   - get_leads: retrieve leads\n\n4. **Expense Tracking:** Track expenses.\n   - add_expense: store expense\n   - get_expenses: retrieve expenses\n   - expense_calculator: totals / calculations\n\n5. **Google Docs:** Manage documents.\n   - create_document: new doc\n   - get_document: read\n   - update_document: modify\n\n6. **Gmail:** Send or read emails.\n   - send_email: send\n   - get_email: read single\n   - get_many_emails: read multiple\n   Safety: Do not send sensitive info or spam.\n\n7. **Calendar:** Schedule or retrieve events.\n   - create_calendar_event\n   - get_calendar_event\n   - get_many_calendar_events\n   Safety: Confirm dates/times before creating events.\n\nGENERAL RULES:\n- Prefer internal tools before web search.\n- Only use Gmail/Calendar when explicitly requested.\n- Keep user info safe.\n- Perform steps logically in sequence.\n- Always provide clear answers after tool actions.",
+          "enableStreaming": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        272,
+        0
+      ],
+      "id": "9862b838-d6c4-40f8-ad02-d56816d585cd",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Edit Fields').item.json.parameters.values.string[0].name }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        208
+      ],
+      "id": "7f08ecc1-e1cf-44ac-90e4-482ba590c75a",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "4T65PUxsCfOthPW1",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to search the internet for up-to-date information.\n\nUse it when the user asks about:\n- current news or recent events\n- facts that may require real-time information\n- company, product, or technology research\n- market trends or public data\n- information that is not already available in internal tools\n\nThis tool performs a web search and returns relevant links, titles, and summaries from the internet which can be used to answer the user’s question.\n\nSafety rules:\n- Avoid visiting or referencing suspicious or unsafe websites.\n- Prefer reliable and well-known sources when possible.\n- Only search when external information is required to answer the user’s question.",
+        "query": "={{ $('Edit Fields').item.json.body.message }}",
+        "options": {}
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavilyTool",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        -240
+      ],
+      "id": "81491357-1387-412e-88b3-a082c4115405",
+      "name": "Search in Tavily",
+      "credentials": {
+        "tavilyApi": {
+          "id": "5vL6PA600GDbXLax",
+          "name": "Tavily account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"name\": \"Generate Session ID\",\n  \"type\": \"n8n-nodes-base.set\",\n  \"typeVersion\": 1,\n  \"position\": [\n    400,\n    300\n  ],\n  \"parameters\": {\n    \"values\": {\n      \"number\": [\n        {\n          \"name\": \"my_field_2\",\n          \"value\": 1\n        }\n      ],\n      \"string\": [\n        {\n          \"name\": \"sessionId\",\n          \"value\": \"{{ $now + '-' + Math.random().toString(36).substring(2,8) }}\"\n        }\n      ]\n    },\n    \"options\": {}\n  }\n}",
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        80,
+        0
+      ],
+      "id": "0aaa7e8a-76b9-4553-8f36-eec861ff013c",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "content": "## Web Search\n",
+        "height": 192,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -288,
+        -304
+      ],
+      "typeVersion": 1,
+      "id": "91a1a649-81f5-48d5-aa42-80c7a8c064ac",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        640,
+        0
+      ],
+      "id": "cd6f0672-2c81-49cb-89e3-e9c06db882d6",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "content": "## Gmail Tool ",
+        "height": 224,
+        "width": 544,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        80,
+        -304
+      ],
+      "typeVersion": 1,
+      "id": "f87d8df2-1136-4b90-9450-b7ae21bc3885",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to send an email using Gmail.\n\nUse it when the user asks to send a message, reply to someone, or share information via email.\n\nRequired information:\n- recipient email address\n- subject\n- message body\n\nBefore sending, ensure the message is clear, professional, and relevant to the user's request.\n\nSafety rules:\n- Do not send emails to unknown or suspicious recipients.\n- Do not send sensitive information such as passwords, API keys, private credentials, or personal data.\n- Do not send spam, promotional bulk emails, or repeated unsolicited messages.\n- Only send an email when the user clearly asks to send one.",
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "emailType": "text",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        144,
+        -240
+      ],
+      "id": "20ecaaa1-b5f5-4a21-a6bd-bd66f6596c58",
+      "name": "Send a message in Gmail",
+      "webhookId": "5d70976e-05f9-4941-bc09-f49da0af7637",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2mrOKGZ6USriZo0N",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to retrieve a specific email message from the Gmail inbox.\n\nUse it when the user asks to read, check, or analyze a particular email.\n\nThis tool returns the email content including sender, subject, and message body.\n\nSafety rules:\n- Do not expose sensitive personal information unless the user explicitly asks for it.\n- Only retrieve emails relevant to the user's request.",
+        "operation": "get",
+        "messageId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message_ID', ``, 'string') }}",
+        "simple": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Simplify', ``, 'boolean') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        320,
+        -240
+      ],
+      "id": "a71025c2-cea6-4529-a900-2238b0934a73",
+      "name": "Get a message in Gmail",
+      "webhookId": "5d70976e-05f9-4941-bc09-f49da0af7637",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2mrOKGZ6USriZo0N",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to retrieve multiple emails from the Gmail inbox.\n\nUse it when the user asks to:\n- view recent emails\n- search emails by keyword\n- review multiple messages\n- analyze inbox activity\n\nThis tool returns a list of emails including sender, subject, and message preview.\n\nSafety rules:\n- Avoid retrieving unnecessary large amounts of emails.\n- Do not expose confidential or sensitive information unless it is directly requested by the user.",
+        "operation": "getAll",
+        "returnAll": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_All', ``, 'boolean') }}",
+        "simple": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Simplify', ``, 'boolean') }}",
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        -240
+      ],
+      "id": "d1c48efa-a4c5-46d4-a058-eb7745fa3f40",
+      "name": "Get many messages in Gmail",
+      "webhookId": "5d70976e-05f9-4941-bc09-f49da0af7637",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2mrOKGZ6USriZo0N",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b19536a2-4d87-4b1c-b6fe-da596320aa22",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -144,
+        0
+      ],
+      "id": "3da5e3f8-255e-4065-a085-bc1f374959ec",
+      "name": "Webhook",
+      "webhookId": "b19536a2-4d87-4b1c-b6fe-da596320aa22"
+    },
+    {
+      "parameters": {
+        "content": "## Calender Tool ",
+        "height": 224,
+        "width": 544,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        688,
+        -304
+      ],
+      "typeVersion": 1,
+      "id": "25c0e774-32fb-4bcb-ab99-56c2bed376b3",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to create a new event in the Google Calendar.\n\nUse it when the user asks to schedule a meeting, appointment, reminder, or event.\n\nRequired information:\n- event title\n- start date and time\n- end date and time\n- optional description or location\n\nSafety rules:\n- Only create events when the user clearly requests scheduling.\n- Ensure the date and time are valid and correctly formatted.\n- Avoid creating duplicate events for the same request.\n- Do not modify or cancel existing events unless the user explicitly asks.",
+        "calendar": {
+          "__rl": true,
+          "value": "0f3ae828c4a00b617182dcd4e9c4efdef903927781a56198790a090c52f48f8d@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Nayyab Malik Personal Calender "
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "useDefaultReminders": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Use_Default_Reminders', ``, 'boolean') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        768,
+        -240
+      ],
+      "id": "93db4af4-4f62-42ac-a4b3-008728937caa",
+      "name": "Create an event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "PhQ6Ht0J0FdI48k1",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to retrieve details about a specific event from the Google Calendar.\n\nUse it when the user asks to check information about a particular meeting or appointment.\n\nThis tool returns event details such as:\n- event title\n- date and time\n- description\n- location\n\nSafety rules:\n- Only retrieve events relevant to the user’s request.\n- Do not expose private event information unnecessarily.",
+        "operation": "get",
+        "calendar": {
+          "__rl": true,
+          "value": "0f3ae828c4a00b617182dcd4e9c4efdef903927781a56198790a090c52f48f8d@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Nayyab Malik Personal Calender "
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Event_ID', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        944,
+        -240
+      ],
+      "id": "73d8be78-dbee-4b9a-9bba-bf75a3b38349",
+      "name": "Get an event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "PhQ6Ht0J0FdI48k1",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to retrieve multiple events from the Google Calendar.\n\nUse it when the user asks to:\n- view upcoming meetings\n- check today’s schedule\n- list events within a specific date range\n- review calendar activity\n\nThis tool returns a list of events including title, date, and time.\n\nSafety rules:\n- Avoid retrieving unnecessary large ranges of events.\n- Only access events needed to answer the user’s request.\n- Respect privacy and do not expose sensitive event details unless requested.",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "0f3ae828c4a00b617182dcd4e9c4efdef903927781a56198790a090c52f48f8d@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Nayyab Malik Personal Calender "
+        },
+        "returnAll": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_All', ``, 'boolean') }}",
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', ``, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        1104,
+        -240
+      ],
+      "id": "d22c7813-0780-4ae2-9e89-99f1146d7503",
+      "name": "Get many events in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "PhQ6Ht0J0FdI48k1",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Document Tool ",
+        "height": 224,
+        "width": 544,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -528,
+        400
+      ],
+      "typeVersion": 1,
+      "id": "85958949-1845-47ca-8f02-df6b1594163f",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to create a new Google Document.\n\nUse it when the user asks to generate a new document, report, note, or written content that needs to be stored.\n\nThe document can contain structured information such as summaries, reports, research notes, meeting notes, or generated content.\n\nOnly create a new document when the user explicitly asks to create or save new written content.",
+        "folderId": "1rap2MPBHMurmBeCsn1UNOv_IpJ5FMABa",
+        "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Title', ``, 'string') }}"
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        -464,
+        464
+      ],
+      "id": "7148fb20-2f3a-460d-8380-85a70bc2c36b",
+      "name": "Create a document in Google Docs",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "YMNSLrMqimQQsxwA",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to retrieve the contents of an existing Google Document.\n\nUse it when the user asks to read, review, summarize, or analyze an existing document.\n\nThis tool returns the text content of the document so it can be analyzed, summarized, or modified.",
+        "operation": "get",
+        "documentURL": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Doc_ID_or_URL', ``, 'string') }}",
+        "simple": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Simplify', ``, 'boolean') }}"
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        -288,
+        464
+      ],
+      "id": "91bc874f-3a09-468f-a805-0a9c25a398bd",
+      "name": "Get a document in Google Docs",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "YMNSLrMqimQQsxwA",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to modify or update an existing Google Document.\n\nUse it when the user asks to:\n- add new information to a document\n- update existing text\n- append additional notes\n- improve or rewrite document content\n\nDo not create a new document when updating; only modify the existing one.",
+        "operation": "update",
+        "documentURL": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Doc_ID_or_URL', ``, 'string') }}",
+        "simple": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Simplify', ``, 'boolean') }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('actionFields0_Text', ``, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        464
+      ],
+      "id": "26379444-9879-4bba-914a-07d7b3e9933a",
+      "name": "Update a document in Google Docs",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "YMNSLrMqimQQsxwA",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to scrape information from a website or webpage URL.\n\nUse it when the user provides a website and asks to extract business leads or contact details.\n\nThe tool should extract useful information such as:\n- company or person name\n- website URL\n- email addresses\n- phone numbers\n- product or service categories\n- any additional notes or remarks\n\nThis tool returns raw webpage content or extracted lead information which can later be stored in the \"Leads\" spreadsheet.",
+        "operation": "scrape",
+        "url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('URL', ``, 'string') }}",
+        "parsers": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Parsers', ``, 'string') }}",
+        "additionalFields": {},
+        "useCustomBody": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Use_Custom_Body', ``, 'boolean') }}",
+        "customBody": "{\n  \"prompt\": \"Find the founders of Firecrawl\",\n  \"urls\": [\"https://firecrawl.dev\"],\n  \"schema\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"founders\": {\n        \"type\": \"array\",\n        \"items\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"name\": { \"type\": \"string\" },\n            \"role\": { \"type\": \"string\" }\n          }\n        }\n      }\n    }\n  }\n}",
+        "requestOptions": {}
+      },
+      "type": "@mendable/n8n-nodes-firecrawl.firecrawlTool",
+      "typeVersion": 1,
+      "position": [
+        176,
+        480
+      ],
+      "id": "36dc7063-07b9-457e-846b-ed9c7b549b2f",
+      "name": "/scrape in Firecrawl",
+      "credentials": {
+        "firecrawlApi": {
+          "id": "MmOBWkVHDnofCtLO",
+          "name": "Firecrawl account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Scrapping  Tool ",
+        "height": 224,
+        "width": 720,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        128,
+        400
+      ],
+      "typeVersion": 1,
+      "id": "d853c0a2-4a3b-4d77-a097-5725b29c2a30",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Expense Tracking  Tool ",
+        "height": 224,
+        "width": 720,
+        "color": "#91035D"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        992,
+        416
+      ],
+      "typeVersion": 1,
+      "id": "40e95626-d451-431b-b11c-e5276047de5b",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        480
+      ],
+      "id": "a054c803-d20e-4198-96f9-71cfd76c208e",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to retrieve expense records from the \"Expense Tracking\" spreadsheet.\n\nUse it when the user asks about:\n- past expenses\n- expense history\n- total spending\n- expenses in a specific category\n- expenses within a date range\n\nThis tool returns rows from the spreadsheet which can be analyzed or summarized.",
+        "documentId": {
+          "__rl": true,
+          "value": "1ih7eBN-5vh_UChpr2Pg8dkab7-S-dJcRKifIrkzIu-c",
+          "mode": "list",
+          "cachedResultName": "Expense Tracking",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ih7eBN-5vh_UChpr2Pg8dkab7-S-dJcRKifIrkzIu-c/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ih7eBN-5vh_UChpr2Pg8dkab7-S-dJcRKifIrkzIu-c/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1184,
+        464
+      ],
+      "id": "915e43ac-28f4-4488-98ef-1cdbb4328044",
+      "name": "Get row(s) in sheet in Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Qbk18J7XTYjPQbOw",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to create the Google Spreadsheet used for expense management.\nThe spreadsheet name is \"Expense Tracking\". \n\nUse this tool only if the expense spreadsheet does not already exist.\n\nThe sheet should contain columns such as:\nDate, Category, Description, Amount.\n\nDo not use this tool if the sheet already exists.",
+        "operation": "create",
+        "documentId": {
+          "__rl": true,
+          "value": "1ih7eBN-5vh_UChpr2Pg8dkab7-S-dJcRKifIrkzIu-c",
+          "mode": "list",
+          "cachedResultName": "Expense Tracking",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ih7eBN-5vh_UChpr2Pg8dkab7-S-dJcRKifIrkzIu-c/edit?usp=drivesdk"
+        },
+        "title": "Sheet1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1376,
+        464
+      ],
+      "id": "34698c61-7497-4a07-8c0b-0a1bfc1c1b44",
+      "name": "Create sheet in Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Qbk18J7XTYjPQbOw",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to retrieve existing leads from the \"Leads\" spreadsheet.\n\nUse it when the user asks to:\n- view stored leads\n- search for leads\n- check if a lead already exists\n- analyze previously collected lead data\n\nThis tool returns rows from the \"Leads\" spreadsheet.",
+        "documentId": {
+          "__rl": true,
+          "value": "1ySRN9spWDHnwI6NlENTI9V4kNLy3Dl9aV5gSGBYMIlw",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ySRN9spWDHnwI6NlENTI9V4kNLy3Dl9aV5gSGBYMIlw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ySRN9spWDHnwI6NlENTI9V4kNLy3Dl9aV5gSGBYMIlw/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        368,
+        464
+      ],
+      "id": "bb1f55f1-f879-44ae-88dc-d7148f3fbc87",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Qbk18J7XTYjPQbOw",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to create the Google Spreadsheet used for storing leads.\n\nThe spreadsheet name is \"Leads\".\n\nUse this tool only if the spreadsheet does not already exist.\n\nThe sheet should contain the following columns:\nNames\nUrls\nEmails\nPhone No\nProducts Categories\nRemarks",
+        "operation": "create",
+        "documentId": {
+          "__rl": true,
+          "value": "1ySRN9spWDHnwI6NlENTI9V4kNLy3Dl9aV5gSGBYMIlw",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ySRN9spWDHnwI6NlENTI9V4kNLy3Dl9aV5gSGBYMIlw/edit?usp=drivesdk"
+        },
+        "title": "Sheet1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        528,
+        464
+      ],
+      "id": "0d33c22f-6107-4b6d-9083-594709f31130",
+      "name": "Create sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Qbk18J7XTYjPQbOw",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to add a new expense record to the \"Expense Tracking\" spreadsheet.\n\nUse this when a user provides expense information such as amount, category, date, or description.\n\nFields to store:\nDate – when the expense occurred\nCategory – type of expense (food, travel, bills, etc.)\nDescription – short note about the expense\nAmount – numeric value of the expense\n\nAlways append a new row instead of overwriting existing data.",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1ih7eBN-5vh_UChpr2Pg8dkab7-S-dJcRKifIrkzIu-c",
+          "mode": "list",
+          "cachedResultName": "Expense Tracking",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ih7eBN-5vh_UChpr2Pg8dkab7-S-dJcRKifIrkzIu-c/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ih7eBN-5vh_UChpr2Pg8dkab7-S-dJcRKifIrkzIu-c/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "IDs ": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('IDs_', ``, 'string') }}",
+            "Dates": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Dates', ``, 'string') }}",
+            "Category ": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Category_', ``, 'string') }}",
+            "SubCategory ": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('SubCategory_', ``, 'string') }}",
+            "Expenses ": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Expenses_', ``, 'string') }}",
+            "Remarks ": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Remarks_', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "IDs ",
+              "displayName": "IDs ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Dates",
+              "displayName": "Dates",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category ",
+              "displayName": "Category ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "SubCategory ",
+              "displayName": "SubCategory ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Expenses ",
+              "displayName": "Expenses ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Remarks ",
+              "displayName": "Remarks ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1552,
+        464
+      ],
+      "id": "a55c6ae3-567b-4fb6-a1b7-bf9ee2f0ea1c",
+      "name": "Append row in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Qbk18J7XTYjPQbOw",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to add a new lead into the \"Leads\" spreadsheet.\n\nUse this tool when you have extracted or received lead information from a website or user input.\n\nEach row should contain the following fields:\n\nNames – name of the person or company\nUrls – website or source URL\nEmails – email address if available\nPhone No – contact phone number\nProducts Categories – type of product or service the company offers\nRemarks – any additional notes about the lead\n\nAlways append a new row without overwriting existing data.",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1ySRN9spWDHnwI6NlENTI9V4kNLy3Dl9aV5gSGBYMIlw",
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ySRN9spWDHnwI6NlENTI9V4kNLy3Dl9aV5gSGBYMIlw/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ySRN9spWDHnwI6NlENTI9V4kNLy3Dl9aV5gSGBYMIlw/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Names ": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Names_', ``, 'string') }}",
+            "Urls  ": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Urls__', ``, 'string') }}",
+            "Emails": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Emails', ``, 'string') }}",
+            "Phone No ": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Phone_No_', ``, 'string') }}",
+            "Services ": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Services_', ``, 'string') }}",
+            "Description ": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description_', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Names ",
+              "displayName": "Names ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Urls  ",
+              "displayName": "Urls  ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Emails",
+              "displayName": "Emails",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone No ",
+              "displayName": "Phone No ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Services ",
+              "displayName": "Services ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Description ",
+              "displayName": "Description ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        688,
+        464
+      ],
+      "id": "c5a24f18-a583-4b82-afb9-4331aa41f7d6",
+      "name": "Append row in sheet in Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Qbk18J7XTYjPQbOw",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "maxOutputTokens": 2000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        96,
+        208
+      ],
+      "id": "800293bd-92dd-400d-b401-c78ff32aee97",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "0DS8X3vAp6jUx0oK",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search in Tavily": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a message in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many messages in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a document in Google Docs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a document in Google Docs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a document in Google Docs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "/scrape in Firecrawl": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create sheet in Google Sheets1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet in Google Sheets1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "7fbf9df7-d0d9-4158-a45f-8f4f14316082",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2440ef147c921f03e60c9b7a99f9651ff47e58a7545aa6e6d25cc9222bbc5131"
+  },
+  "id": "EGooF6ZIygCPSSpC",
+  "tags": []
+}
